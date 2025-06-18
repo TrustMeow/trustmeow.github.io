@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Funky SPA Site</title>
+    <link rel="stylesheet" href="css/style.css">
+    <base href="/"> <!-- Important for GitHub Pages -->
+</head>
+<body>
+    <!-- Glitch background canvas -->
+    <canvas id="glitchCanvas"></canvas>
+    
+    <!-- Main app container -->
+    <div id="app">
+        <!-- Content will be injected here by JS -->
+    </div>
+    
+    <!-- Navigation -->
+    <nav class="funky-nav">
+        <a href="/" data-route>Home</a>
+        <a href="/games" data-route>Games</a>
+        <a href="/about" data-route>About</a>
+        <a href="/contact" data-route>Contact</a>
+    </nav>
+    
+    <script src="js/main.js"></script>
+    <script src="js/game.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,270 @@
+# Basic Program to open any website Link,
+# Code also display some text on TFT screen
+# This code works for Windows based PC/Laptop but can be modified for Other OS
+import time
+import os
+import usb_hid
+import digitalio
+import board
+import random
+import busio
+import terminalio
+import displayio
+import tkinter as tk
+from tkinter import messagebox, font
+from adafruit_display_text import label
+from adafruit_hid.keyboard import Keyboard, Keycode
+from keyboard_layout_win_uk import KeyboardLayout
+from adafruit_st7789 import ST7789
+
+# Declare some parameters used to adjust style of text and graphics
+BORDER = 12
+FONTSCALE = 1
+FONTSCALE1 = 2
+
+# Hacker theme colors (green on black)
+BACKGROUND_COLOR = 0x000000  # black
+FOREGROUND_COLOR = 0x002000  # dark green
+TEXT_COLOR = 0x00FF00       # bright green
+
+# Release any resources currently in use for the displays
+displayio.release_displays()
+
+tft_clk = board.GP10 # must be a SPI CLK
+tft_mosi= board.GP11 # must be a SPI TX
+tft_rst = board.GP12
+tft_dc  = board.GP8
+tft_cs  = board.GP9
+tft_bl  = board.GP13 #GPIO pin to control backlight LED
+spi = busio.SPI(clock=tft_clk, MOSI=tft_mosi)
+
+#define led (as backlight) pin as output
+led = digitalio.DigitalInOut(tft_bl)
+led.direction = digitalio.Direction.OUTPUT
+led.value=True
+
+# Make the displayio SPI bus and the GC9A01 display
+display_bus = displayio.FourWire(spi, command=tft_dc, chip_select=tft_cs, reset=tft_rst)
+display = ST7789(display_bus, rotation=90, width=240, height=135,rowstart=40, colstart=53)
+
+# Make the display context
+splash = displayio.Group()
+display.show(splash)
+
+color_bitmap = displayio.Bitmap(display.width, display.height, 1)
+color_palette = displayio.Palette(1)
+color_palette[0] = BACKGROUND_COLOR
+
+bg_sprite = displayio.TileGrid(color_bitmap, pixel_shader=color_palette, x=0, y=0)
+splash.append(bg_sprite)
+
+# This function creates colorful rectangular box
+def inner_rectangle():
+    # Draw a smaller inner rectangle
+    inner_bitmap = displayio.Bitmap(display.width - BORDER * 2, display.height - BORDER * 2, 1)
+    inner_palette = displayio.Palette(1)
+    inner_palette[0] = FOREGROUND_COLOR
+    inner_sprite = displayio.TileGrid(inner_bitmap, pixel_shader=inner_palette, x=BORDER, y=BORDER)
+    splash.append(inner_sprite)
+
+#Function to print data on TFT
+def print_onTFT(text, x_pos, y_pos): 
+    text_area = label.Label(terminalio.FONT, text=text, color=TEXT_COLOR)
+    text_group = displayio.Group(scale=FONTSCALE1,x=x_pos,y=y_pos)
+    text_group.append(text_area)  # Subgroup for text scaling
+    splash.append(text_group)
+    
+# ASCII art for the cat
+def print_cat():
+    cat_art = [
+        "   /\_/\ ",
+        "  ( o.o )",
+        "   > ^ < "
+    ]
+    for i, line in enumerate(cat_art):
+        print_onTFT(line, 50, 70 + i*20)
+
+inner_rectangle()
+print_onTFT("> INITIATING", 30, 30)
+print_onTFT("			", 30, 40)
+print_onTFT("> TRUSTMEOW v1.0", 30, 50)
+time.sleep(2)
+splash.pop()  # Remove previous text
+inner_rectangle()
+print_onTFT("ACCESS GRANTED", 30, 30)
+print_cat()
+time.sleep(2)
+
+
+class TrustMeowApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("TrustMeow")
+        self.root.geometry("500x500")
+        self.root.resizable(False, False)
+        self.root.configure(bg='black')
+        
+        # Animation control variables
+        self.animation_active = True
+        self.cursor_blink_id = None
+        self.glitch_animation_id = None
+        
+        self.create_splash()
+    
+    def print_cat(self, canvas):
+        cat_art = [
+            r"   /\_/\ ",
+            r"  ( o.o )",
+            r"   > ^ < "
+        ]
+        
+        y_pos = 30
+        for line in cat_art:
+            canvas.create_text(200, y_pos, text=line, font=("Courier", 24), fill="#00ff00")
+            y_pos += 40
+
+    def option_selected(self, option):
+        if option == 1:
+            messagebox.showinfo("Option 1", "Initializing Monero mining protocol...")
+        elif option == 2:
+            messagebox.showinfo("Option 2", "Accessing darknet subsystems...")
+        elif option == 3:
+            messagebox.showinfo("Option 3", "Deploying payload...")
+        elif option == 4:
+            if messagebox.askyesno("Shutdown", "Initiating system self-destruct sequence. Confirm?"):
+                os.system("shutdown /s /t 1")
+        elif option == 5:
+            self.cleanup_animations()
+            self.root.destroy()
+
+    def cleanup_animations(self):
+        """Stop all animations before destroying widgets"""
+        self.animation_active = False
+        if self.cursor_blink_id:
+            self.root.after_cancel(self.cursor_blink_id)
+        if self.glitch_animation_id:
+            self.root.after_cancel(self.glitch_animation_id)
+
+    def show_menu(self):
+        self.cleanup_animations()
+        
+        for widget in self.root.winfo_children():
+            widget.destroy()
+        
+        main_frame = tk.Frame(self.root, bg='black')
+        main_frame.pack(expand=True, fill='both')
+        
+        # Create a frame for the animated title
+        title_frame = tk.Frame(main_frame, bg='black')
+        title_frame.pack(pady=(40, 20))
+        
+        # Create canvas for glitch effect
+        title_canvas = tk.Canvas(title_frame, width=400, height=80, bg='black', highlightthickness=0)
+        title_canvas.pack()
+        
+        # Create the glitch text layers
+        self.glitch_texts = []
+        colors = ["#00ff00", "#ff00ff", "#00ffff"]
+        offsets = [(0, 0), (2, 2), (-2, -2)]
+        
+        for i in range(3):
+            text = title_canvas.create_text(
+                200 + offsets[i][0], 
+                40 + offsets[i][1], 
+                text="TrustMeow", 
+                font=("Courier", 24, "bold"), 
+                fill=colors[i]
+            )
+            self.glitch_texts.append(text)
+        
+        # Restart animation flag
+        self.animation_active = True
+        self.animate_glitch(title_canvas)
+        
+        button_frame = tk.Frame(main_frame, bg='black')
+        button_frame.pack(expand=True)
+        
+        button_style = {
+            'font': ("Courier", 12),
+            'bg': 'black',
+            'fg': '#00ff00',
+            'activebackground': '#003300',
+            'activeforeground': '#00ff00',
+            'relief': 'groove',
+            'borderwidth': 2,
+            'width': 20
+        }
+        
+        options = [
+            ("1: Monero Mine", 1),
+            ("2: Darknet Access", 2),
+            ("3: Payload Deploy", 3),
+            ("4: System Shutdown", 4),
+            ("5: Exit Terminal", 5)
+        ]
+        
+        for text, opt in options:
+            btn = tk.Button(button_frame, text=text, command=lambda o=opt: self.option_selected(o), **button_style)
+            btn.pack(pady=8, fill='x')
+        
+        tk.Frame(main_frame, bg='black', height=40).pack()
+
+    def animate_glitch(self, canvas):
+        if not self.animation_active:
+            return
+            
+        # Main text (green) - subtle constant movement
+        main_x = 200 + random.uniform(-1.5, 1.5)
+        main_y = 40 + random.uniform(-1.5, 1.5)
+        canvas.coords(self.glitch_texts[0], main_x, main_y)
+        
+        # Glitch layers (magenta and cyan) - more pronounced movement
+        for i in range(1, 3):
+            x_offset = random.uniform(-4, 4)
+            y_offset = random.uniform(-4, 4)
+            canvas.coords(self.glitch_texts[i], 
+                        200 + (2 if i == 1 else -2) + x_offset, 
+                        40 + (2 if i == 1 else -2) + y_offset)
+        
+        # Occasionally change glitch layer colors
+        if random.random() < 0.1:
+            canvas.itemconfig(self.glitch_texts[1], fill=random.choice(["#ff00ff", "#ffff00", "#ff0000"]))
+            canvas.itemconfig(self.glitch_texts[2], fill=random.choice(["#00ffff", "#0000ff", "#ffffff"]))
+        
+        self.glitch_animation_id = self.root.after(50, lambda: self.animate_glitch(canvas))
+
+    def create_splash(self):
+        splash_frame = tk.Frame(self.root, bg='black')
+        splash_frame.pack(expand=True, fill='both')
+        
+        canvas = tk.Canvas(splash_frame, width=400, height=200, bg='black', highlightthickness=0)
+        canvas.pack(pady=(80, 20), expand=True)
+        self.print_cat(canvas)
+        
+        loading_font = font.Font(family="Courier", size=14)
+        loading_text = tk.Label(splash_frame, text="Initializing TrustMeow v1.337", 
+                              font=loading_font, fg="#00ff00", bg='black')
+        loading_text.pack(pady=20)
+        
+        # Blinking cursor
+        self.cursor = tk.Label(splash_frame, text="█", font=loading_font, fg="#00ff00", bg='black')
+        self.cursor.pack()
+        
+        self.animation_active = True
+        self.blink_cursor()
+        self.root.after(2000, self.show_menu)
+
+    def blink_cursor(self):
+        if not self.animation_active:
+            return
+            
+        if self.cursor.winfo_exists():  # Check if widget still exists
+            current = self.cursor.cget("text")
+            self.cursor.config(text="█" if current == "" else "")
+        
+        self.cursor_blink_id = self.root.after(500, self.blink_cursor)
+
+# Create and run the application
+root = tk.Tk()
+app = TrustMeowApp(root)
+root.mainloop()

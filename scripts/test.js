@@ -1,10 +1,16 @@
-// A simple script that shows an alert and defines a variable
-alert("External script loaded successfully!");
+// Function to trigger a file download
+function downloadFile(filename, content) {
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+}
 
-// Define a global variable to confirm execution
-window.testMessage = "Hello from the external script!";
+// Create and download "result.txt" with "Test successful"
+downloadFile('result.txt', 'Test successful');
 
-// Define a function to call later
-window.sayHello = function(name) {
-  console.log(`Hello, ${name}! This came from the external script.`);
-};
+// Optional: Log success
+console.log('File download initiated! Check your downloads folder.');

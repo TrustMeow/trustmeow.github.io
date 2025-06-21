@@ -1,21 +1,10 @@
 # Basic Program to open any website Link,
 # Code also display some text on TFT screen
 # This code works for Windows based PC/Laptop but can be modified for Other OS
-import time
 import os
-import usb_hid
-import digitalio
-import board
 import random
-import busio
-import terminalio
-import displayio
 import tkinter as tk
 from tkinter import messagebox, font
-from adafruit_display_text import label
-from adafruit_hid.keyboard import Keyboard, Keycode
-from keyboard_layout_win_uk import KeyboardLayout
-from adafruit_st7789 import ST7789
 
 # Declare some parameters used to adjust style of text and graphics
 BORDER = 12
